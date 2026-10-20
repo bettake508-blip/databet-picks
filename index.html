@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Data Bet — Apuesta con datos, no con intuición.</title>
+  <meta name="description" content="Picks de fútbol con histórico público y verificable: Oddcheck y Over 2.5, registro completo de resultados, filtros por liga, equipo, cuota y EV.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%230F5CFF'/%3E%3Cstop offset='1' stop-color='%23A3E635'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='12' cy='12' r='10' fill='url(%23g)'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js" charset="utf-8"></script>
+  <style>
+    * { box-sizing: border-box; }
+    :root {
+      color-scheme: dark;
+      --fondo: #05080F;
+      --superficie: #0C1424;
+      --borde: rgba(255,255,255,.08);
+      --texto: #EDF3FC;
+      --texto-2: #90A2C6;
+      --cobalto: #0F5CFF;
+      --cobalto-hover: #3D7BFF;
+      --lima: #A3E635;
+      --lima-hover: #C2F042;
+      --ganado: #A3E635;
+      --perdido: #FF4D5E;
+      --aviso: #FFB020;
+      --radio: 12px;
+      --gradiente: linear-gradient(135deg, var(--cobalto), var(--lima));
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+    }
+    .contenedor { width: min(100%, 1060px); margin: 0 auto; padding: 0 18px; }
+    a { color: var(--cobalto-hover); text-decoration: none; }
+    h2 { font-size: clamp(20px, 4.5vw, 26px); font-weight: 800; margin: 0 0 6px; letter-spacing: -.3px; }
+    .sec-sub { color: var(--texto-2); margin: 0 0 22px; font-size: 14.5px; max-width: 680px; }
+
+    /* ---------- 1. Cabecera fija ---------- */
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(5,8,15,.88);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--borde);
+    }
+    .header .contenedor { display: flex; align-items: center; justify-content: space-between; height: 58px; }
+    .logo { display: flex; align-items: center; gap: 9px; font-weight: 800; font-size: 19px; color: var(--texto); letter-spacing: .2px; }
+    .logo-punto { width: 10px; height: 10px; border-radius: 50%; background: var(--gradiente); box-shadow: 0 0 12px rgba(61,123,255,.55); }
+    .redes { display: flex; gap: 8px; }
+    .btn-icono {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: var(--radio);
+      background: var(--superficie); border: 1px solid var(--borde);
+      color: var(--texto); transition: border-color .15s, color .15s;
+    }
+    .btn-icono:hover { border-color: var(--cobalto-hover); color: var(--cobalto-hover); }
+    .btn-icono svg { width: 19px; height: 19px; fill: currentColor; }
+
+    /* ---------- 2. Hero ---------- */
+    .hero {
+      background: linear-gradient(135deg, rgba(15,92,255,.30), rgba(163,230,53,.18)), var(--superficie);
+      border-bottom: 1px solid var(--borde);
+      padding: 52px 0 46px;
+    }
+    .hero h1 { font-size: clamp(26px, 6vw, 40px); font-weight: 800; margin: 0 0 10px; letter-spacing: -.5px; line-height: 1.15; }
+    .hero .sub { color: var(--texto-2); max-width: 580px; margin: 0 0 20px; font-size: 15px; }
+    .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; }
+    .badge {
+      background: rgba(5,8,15,.45); border: 1px solid var(--borde);
+      border-radius: 999px; padding: 5px 12px; font-size: 12.5px; color: var(--texto);
+    }
+    .badge b { color: var(--lima); font-weight: 700; }
+    .hero-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    /* ---------- CTAs ---------- */
+    .cta-grad {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--gradiente); color: #05080F; font-weight: 700;
+      padding: 12px 20px; border-radius: var(--radio); font-size: 15px;
+      transition: filter .15s;
+    }
+    .cta-grad:hover { filter: brightness(1.12); }
+    .cta-borde {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; border: 1px solid var(--borde); color: var(--texto);
+      padding: 12px 20px; border-radius: var(--radio); font-size: 15px; font-weight: 600;
+      transition: border-color .15s, color .15s;
+    }
+    .cta-borde:hover { border-color: var(--cobalto-hover); color: var(--cobalto-hover); }
+    .cta-grad svg, .cta-borde svg { width: 16px; height: 16px; fill: currentColor; }
+
+    /* ---------- 3. Banner picks nuevos ---------- */
+    .canal { border-bottom: 1px solid var(--borde); background: rgba(15,92,255,.06); }
+    .canal .contenedor {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+      gap: 14px; padding-top: 16px; padding-bottom: 16px;
+    }
+    .canal p { margin: 0; font-size: 14px; }
+    .canal p b { color: var(--lima); }
+    .canal .cta-grad { padding: 10px 16px; font-size: 13.5px; }
+
+    /* ---------- 4. Historial ---------- */
+    section { padding: 44px 0; }
+    .cabecera-seccion { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; }
+    .chip-actualizado {
+      font-size: 12px; color: var(--texto-2); border: 1px solid var(--borde);
+      background: var(--superficie); border-radius: 999px; padding: 3px 10px;
+    }
+    .selector-modelo { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 14px; }
+    .btn-modelo {
+      border: 1px solid var(--borde); background: var(--superficie); color: var(--texto-2);
+      padding: 9px 16px; border-radius: 999px; font-weight: 600; font-size: 13.5px;
+      cursor: pointer; font-family: inherit; transition: color .15s, border-color .15s, background .15s;
+    }
+    .btn-modelo[data-modelo="oddchek"].activo { border-color: var(--cobalto); color: var(--cobalto-hover); background: rgba(15,92,255,.12); }
+    .btn-modelo[data-modelo="over25"].activo { border-color: var(--lima); color: var(--lima); background: rgba(163,230,53,.10); }
+    .btn-modelo[data-modelo="ambos"].activo { border-color: transparent; background: var(--gradiente); color: #05080F; }
+
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .kpi { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 13px 14px 12px; }
+    .kpi-etiqueta {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; text-transform: uppercase; letter-spacing: .8px; color: var(--texto-2);
+    }
+    .punto { width: 8px; height: 8px; border-radius: 50%; background: var(--texto-2); flex: none; }
+    .punto.ganado { background: var(--ganado); box-shadow: 0 0 8px rgba(163,230,53,.45); }
+    .punto.perdido { background: var(--perdido); }
+    .punto.aviso { background: var(--aviso); }
+    .punto.neutro { background: var(--cobalto); }
+    .kpi-valor { font-size: 21px; font-weight: 800; margin-top: 6px; font-variant-numeric: tabular-nums; }
+    .kpi-valor.pos { color: var(--ganado); }
+    .kpi-valor.neg { color: var(--perdido); }
+
+    .filtros { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; margin-bottom: 16px; display: grid; gap: 14px; }
+    .filtros-legend { font-size: 11.5px; text-transform: uppercase; letter-spacing: .8px; color: var(--texto-2); margin: 0; }
+    .chips-ligas { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip-liga { position: relative; }
+    .chip-liga input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+    .chip-liga span {
+      display: inline-block; padding: 6px 12px; border-radius: 999px;
+      border: 1px solid var(--borde); font-size: 12.5px; color: var(--texto-2);
+      cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+    }
+    .chip-liga input:checked + span { border-color: var(--cobalto-hover); color: var(--cobalto-hover); background: rgba(15,92,255,.12); }
+    .ayuda { font-size: 11.5px; color: var(--texto-2); }
+    .grid-filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+    .campo { display: grid; gap: 5px; }
+    .campo label { font-size: 11px; color: var(--texto-2); text-transform: uppercase; letter-spacing: .6px; }
+    .campo label small { text-transform: none; letter-spacing: 0; }
+    input, select {
+      background: rgba(5,8,15,.55); border: 1px solid var(--borde); color: var(--texto);
+      border-radius: 10px; padding: 9px 10px; font: inherit; font-size: 13.5px; width: 100%;
+    }
+    input:focus, select:focus { outline: none; border-color: var(--cobalto-hover); }
+    .rango-par { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .acciones { display: flex; align-items: end; }
+    .btn-reset {
+      background: var(--superficie); border: 1px solid var(--borde); color: var(--texto-2);
+      padding: 10px 14px; border-radius: 10px; font: inherit; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: border-color .15s, color .15s;
+    }
+    .btn-reset:hover { border-color: var(--perdido); color: var(--perdido); }
+
+    .tarjeta { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; margin-bottom: 16px; }
+    .titulo-tarjeta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 12px; }
+    .titulo-tarjeta h3 { margin: 0; font-size: 15px; font-weight: 700; }
+    .titulo-tarjeta .conteo { font-size: 12.5px; color: var(--texto-2); }
+    .grafica-contenedor { position: relative; height: 300px; }
+    #curva-bank { height: 100%; min-height: 200px; }
+    .grafica-contenedor .vacio {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: var(--texto-2); font-size: 13.5px; text-align: center; padding: 20px;
+      background: var(--superficie); border-radius: var(--radio);
+    }
+    .vacio[hidden] { display: none; }
+
+    .tabla-scroll { overflow-x: auto; overflow-y: auto; max-height: 70vh; -webkit-overflow-scrolling: touch; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 620px; }
+    thead th {
+      position: sticky; top: 0; background: #101B31; color: var(--texto-2);
+      font-size: 11px; text-transform: uppercase; letter-spacing: .6px; text-align: left;
+      padding: 9px 10px; cursor: pointer; user-select: none; white-space: nowrap;
+      border-bottom: 1px solid var(--borde);
+    }
+    thead th:hover { color: var(--cobalto-hover); }
+    th.ord-asc::after { content: " ↑"; color: var(--lima); }
+    th.ord-desc::after { content: " ↓"; color: var(--lima); }
+    tbody td { padding: 9px 10px; border-bottom: 1px solid var(--borde); white-space: nowrap; }
+    tbody tr:hover { background: rgba(15,92,255,.05); }
+    .c-num { text-align: right; font-variant-numeric: tabular-nums; }
+    .c-fecha { color: var(--texto-2); font-size: 12px; }
+    .c-partido .local { font-weight: 600; }
+    .c-partido .vs { color: var(--texto-2); font-size: 10.5px; margin: 0 5px; }
+    .c-partido .visitante { font-weight: 600; }
+    .chip-modelo { font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 999px; border: 1px solid; }
+    .res { font-weight: 800; padding: 1px 7px; border-radius: 6px; font-size: 11.5px; }
+    .res-g { color: var(--ganado); background: rgba(163,230,53,.12); }
+    .res-p { color: var(--perdido); background: rgba(255,77,94,.12); }
+    .goles { color: var(--texto-2); font-size: 11px; margin-left: 5px; }
+    .pos { color: var(--ganado); }
+    .neg { color: var(--perdido); }
+    .fila-vacia td { text-align: center; color: var(--texto-2); padding: 22px 10px; }
+
+    /* ---------- 5. Cómo funciona ---------- */
+    .pasos { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+    .paso { background: var(--superficie); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; }
+    .paso .num {
+      width: 26px; height: 26px; border-radius: 8px; background: var(--gradiente);
+      color: #05080F; font-weight: 800; display: flex; align-items: center; justify-content: center;
+      font-size: 13px; margin-bottom: 10px;
+    }
+    .paso h3 { margin: 0 0 6px; font-size: 15px; }
+    .paso p { margin: 0; color: var(--texto-2); font-size: 13.5px; }
+    .paso p b { color: var(--texto); font-weight: 600; }
+
+    /* ---------- 6. Modo prueba ---------- */
+    .modo-prueba .panel {
+      background: linear-gradient(135deg, rgba(15,92,255,.18), rgba(163,230,53,.14)), var(--superficie);
+      border: 1px solid var(--borde); border-radius: var(--radio);
+      padding: 30px 20px; text-align: center;
+    }
+    .modo-prueba .panel h2 { margin-bottom: 10px; }
+    .modo-prueba .panel p { color: var(--texto-2); max-width: 560px; margin: 0 auto 20px; font-size: 14.5px; }
+    .modo-prueba .panel .hero-ctas { justify-content: center; }
+
+    /* ---------- 7. Pie ---------- */
+    footer { border-top: 1px solid var(--borde); background: rgba(12,20,36,.5); padding: 26px 0 34px; }
+    footer .marca { font-weight: 800; margin-bottom: 8px; }
+    footer .aviso { color: var(--texto-2); font-size: 12.5px; max-width: 720px; margin: 0; }
+    footer .enlaces { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 14px; font-size: 13px; }
+    footer .enlaces a { color: var(--texto-2); }
+    footer .enlaces a:hover { color: var(--cobalto-hover); }
+
+    @media (min-width: 640px) {
+      .grid-filtros { grid-template-columns: repeat(4, 1fr); }
+      .campo.equipo { grid-column: span 2; }
+      .grafica-contenedor { height: 340px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 1. Cabecera fija -->
+  <header class="header">
+    <div class="contenedor">
+      <a class="logo" href="#"><span class="logo-punto"></span>Data Bet</a>
+      <nav class="redes">
+        <a class="btn-icono" href="https://t.me/databetllm" target="_blank" rel="noopener" aria-label="Telegram">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </a>
+        <a class="btn-icono" href="https://www.tiktok.com/@take.bet3" target="_blank" rel="noopener" aria-label="TikTok">
+          <svg viewBox="0 0 24 24"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.28c-1.63-.05-3.24-.5-4.7-1.29-.64-.34-1.24-.75-1.82-1.19-.01 2.16.02 4.33-.02 6.48-.09 2.6-1.59 5.07-3.86 6.44-2.96 1.94-6.99 1.75-9.9-.34-2.9-1.97-4.35-5.7-3.68-9.06.6-3.15 3.1-5.77 6.2-6.57.26-.06.53-.11.8-.15v4.33c-2.93.68-4.6 3.94-3.47 6.74.77 2.01 2.9 3.32 5.04 3.05 1.68-.17 3.22-1.36 3.84-2.93.27-.6.28-1.26.28-1.9.02-6.67.01-13.34.02-20.02z"/></svg>
+        </a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- 2. Hero -->
+  <section class="hero">
+    <div class="contenedor">
+      <h1>Apuesta con datos, no con intuición.</h1>
+      <p class="sub">Picks de fútbol generados por dos modelos de machine learning y asentados
+        con su resultado real. Cada pick se registra antes del partido: aquí puedes
+        comprobar todos, sin letra pequeña.</p>
+      <div class="badges">
+        <span class="badge"><b id="badge-total">—</b>&nbsp;<span id="badge-total-texto">picks registrados</span></span>
+        <span class="badge">Actualización automática cada 2 días</span>
+        <span class="badge">Resultados verificables</span>
+      </div>
+      <div class="hero-ctas">
+        <a class="cta-grad" href="https://t.me/databetllm" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          Únete al canal
+        </a>
+        <a class="cta-borde" href="#historial">Ver el historial</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Picks nuevos: solo en el canal (sin datos pendientes) -->
+  <section class="canal" aria-label="Picks nuevos solo en el canal">
+    <div class="contenedor">
+      <p>Los picks de cada jornada se publican <b>solo en el canal de Telegram</b>,
+        antes de los partidos. La web guarda el histórico jugado.</p>
+      <a class="cta-grad" href="https://t.me/databetllm" target="_blank" rel="noopener">Únete al canal</a>
+    </div>
+  </section>
+
+  <main>
+    <!-- 4. Historial verificable -->
+    <section id="historial">
+      <div class="contenedor">
+        <div class="cabecera-seccion">
+          <h2>Historial verificable</h2>
+          <span class="chip-actualizado" id="actualizado">Actualizado: —</span>
+        </div>
+        <p class="sec-sub">Filtra y comprueba cualquier segmento: todos los indicadores de abajo
+          se recalculan en tu navegador sobre los picks visibles.</p>
+
+        <div class="selector-modelo" role="group" aria-label="Modelo">
+          <button type="button" class="btn-modelo" data-modelo="oddchek">Oddcheck</button>
+          <button type="button" class="btn-modelo" data-modelo="over25">Over 2.5</button>
+          <button type="button" class="btn-modelo" data-modelo="ambos">Ambos</button>
+        </div>
+
+        <div class="kpis">
+          <div class="kpi"><div class="kpi-etiqueta">Hit % <span class="punto neutro" id="dot-hit"></span></div><div class="kpi-valor" id="kpi-hit">—</div></div>
+          <div class="kpi"><div class="kpi-etiqueta">ROI <span class="punto neutro" id="dot-roi"></span></div><div class="kpi-valor" id="kpi-roi">—</div></div>
+          <div class="kpi"><div class="kpi-etiqueta">P&L S/ <span class="punto neutro" id="dot-pnl"></span></div><div class="kpi-valor" id="kpi-pnl">—</div></div>
+          <div class="kpi"><div class="kpi-etiqueta">N picks <span class="punto neutro" id="dot-n"></span></div><div class="kpi-valor" id="kpi-n">—</div></div>
+          <div class="kpi"><div class="kpi-etiqueta">Bank final <span class="punto neutro" id="dot-bank"></span></div><div class="kpi-valor" id="kpi-bank">—</div></div>
+        </div>
+
+        <div class="filtros">
+          <!-- Estado: la web solo contiene filas Jugado (build_payload las filtra),
+               así que el control de estado no aporta y se omite. -->
+          <div>
+            <p class="filtros-legend">Ligas</p>
+            <div class="chips-ligas" style="margin-top:8px">
+              <label class="chip-liga"><input type="checkbox" name="liga" value="premier_league"><span>Premier League</span></label>
+              <label class="chip-liga"><input type="checkbox" name="liga" value="laliga"><span>LaLiga</span></label>
+              <label class="chip-liga"><input type="checkbox" name="liga" value="serie_a"><span>Serie A</span></label>
+              <label class="chip-liga"><input type="checkbox" name="liga" value="bundesliga"><span>Bundesliga</span></label>
+              <label class="chip-liga"><input type="checkbox" name="liga" value="ligue_1"><span>Ligue 1</span></label>
+              <span class="ayuda">Sin marcas = todas</span>
+            </div>
+          </div>
+          <div class="grid-filtros">
+            <div class="campo equipo">
+              <label for="filtro-equipo">Equipo</label>
+              <input id="filtro-equipo" type="text" placeholder="Ej.: Español, Betis…" autocomplete="off">
+            </div>
+            <div class="campo">
+              <label for="filtro-lado">Lado</label>
+              <select id="filtro-lado">
+                <option value="todos">Todos</option>
+                <option value="local">Local</option>
+                <option value="visitante">Visitante</option>
+              </select>
+            </div>
+            <div class="campo">
+              <label>Cuota <small>min – max</small></label>
+              <div class="rango-par">
+                <input id="filtro-cuota-min" type="number" inputmode="decimal" min="1" step="0.01" placeholder="min">
+                <input id="filtro-cuota-max" type="number" inputmode="decimal" min="1" step="0.01" placeholder="max">
+              </div>
+            </div>
+            <div class="campo">
+              <label>Prob % <small>min – max</small></label>
+              <div class="rango-par">
+                <input id="filtro-prob-min" type="number" inputmode="decimal" min="0" max="100" step="1" placeholder="min">
+                <input id="filtro-prob-max" type="number" inputmode="decimal" min="0" max="100" step="1" placeholder="max">
+              </div>
+            </div>
+            <div class="campo">
+              <label>EV <small>min – max</small></label>
+              <div class="rango-par">
+                <input id="filtro-ev-min" type="number" inputmode="decimal" step="0.05" placeholder="min">
+                <input id="filtro-ev-max" type="number" inputmode="decimal" step="0.05" placeholder="max">
+              </div>
+            </div>
+            <div class="campo">
+              <label for="filtro-desde">Desde</label>
+              <input id="filtro-desde" type="date">
+            </div>
+            <div class="campo">
+              <label for="filtro-hasta">Hasta</label>
+              <input id="filtro-hasta" type="date">
+            </div>
+            <div class="campo">
+              <label for="filtro-resultado">Resultado</label>
+              <select id="filtro-resultado">
+                <option value="todos">Todos</option>
+                <option value="G">Ganado</option>
+                <option value="P">Perdido</option>
+              </select>
+            </div>
+            <div class="campo acciones">
+              <button type="button" class="btn-reset" id="btn-reset">Limpiar filtros</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h3>Curva de bank acumulado</h3>
+            <span class="conteo">Stake 10 S/ por pick · bank inicial 1.000 S/</span>
+          </div>
+          <div class="grafica-contenedor">
+            <div id="curva-bank"></div>
+            <div class="vacio" id="curva-vacio" hidden>Ningún pick con estos filtros.</div>
+          </div>
+        </div>
+
+        <div class="tarjeta">
+          <div class="titulo-tarjeta">
+            <h3>Picks jugados</h3>
+            <span class="conteo" id="conteo">—</span>
+          </div>
+          <div class="tabla-scroll">
+            <table id="tabla-picks">
+              <thead>
+                <tr>
+                  <th data-clave="fecha">Fecha</th>
+                  <th data-clave="liga">Liga</th>
+                  <th data-clave="partido">Partido</th>
+                  <th data-clave="model">Modelo</th>
+                  <th data-clave="prob">Prob</th>
+                  <th data-clave="cuota">Cuota</th>
+                  <th data-clave="ev">EV</th>
+                  <th data-clave="resultado">Res</th>
+                  <th data-clave="pnl">P&L</th>
+                </tr>
+              </thead>
+              <tbody id="cuerpo-tabla"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Cómo funciona -->
+    <section id="como-funciona">
+      <div class="contenedor">
+        <h2>Cómo funciona</h2>
+        <p class="sec-sub">Nada de humo: estos son los datos, las reglas y el estado real del proyecto.</p>
+        <div class="pasos">
+          <div class="paso">
+            <div class="num">1</div>
+            <h3>Datos reales</h3>
+            <p>Consumimos estadísticas y resultados de <b>FotMob</b>, calendario de
+              <b>football-data</b> y <b>cuotas reales de mercado</b>. Ningún pick se inventa a mano.</p>
+          </div>
+          <div class="paso">
+            <div class="num">2</div>
+            <h3>Dos modelos</h3>
+            <p><b>Oddcheck</b> detecta cuotas con valor; <b>Over 2.5</b> detecta partidos con
+              gol. Cada modelo solo publica cuando su probabilidad supera su umbral de
+              calibración.</p>
+          </div>
+          <div class="paso">
+            <div class="num">3</div>
+            <h3>Reglas claras</h3>
+            <p>Stake fijo de <b><span id="conv-stake">10</span> S/</b> sobre un bank de
+              <b><span id="conv-bank">1.000</span> S/</b>. Gana: (cuota − 1) × 10 S/.
+              Pierde: −10 S/. ROI = P&L / (N × 10).</p>
+          </div>
+          <div class="paso">
+            <div class="num">4</div>
+            <h3>Temporada de prueba</h3>
+            <p>Estamos en temporada de prueba: los picks nuevos se publican en el canal y
+              <b>todo resultado se asienta aquí</b>, sea bueno o malo. La honestidad es el producto.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Modo prueba -->
+    <section id="modo-prueba" class="modo-prueba">
+      <div class="contenedor">
+        <div class="panel">
+          <h2>Modo prueba: entra y recibe los picks</h2>
+          <p>Quien entra al canal recibe los picks de cada jornada antes de los partidos,
+            gratis durante la temporada de prueba. El registro completo queda en esta web
+            para que decidas con datos, no con intuición.</p>
+          <div class="hero-ctas">
+            <a class="cta-grad" href="https://t.me/databetllm" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              Únete al canal
+            </a>
+            <a class="cta-borde" href="https://www.tiktok.com/@take.bet3" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><path d="M12.53.02C13.84 0 15.14.01 16.44 0c.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.28c-1.63-.05-3.24-.5-4.7-1.29-.64-.34-1.24-.75-1.82-1.19-.01 2.16.02 4.33-.02 6.48-.09 2.6-1.59 5.07-3.86 6.44-2.96 1.94-6.99 1.75-9.9-.34-2.9-1.97-4.35-5.7-3.68-9.06.6-3.15 3.1-5.77 6.2-6.57.26-.06.53-.11.8-.15v4.33c-2.93.68-4.6 3.94-3.47 6.74.77 2.01 2.9 3.32 5.04 3.05 1.68-.17 3.22-1.36 3.84-2.93.27-.6.28-1.26.28-1.9.02-6.67.01-13.34.02-20.02z"/></svg>
+              Síguenos en TikTok
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- 7. Pie -->
+  <footer>
+    <div class="contenedor">
+      <div class="marca">Data Bet</div>
+      <p class="aviso">Apuesta responsable: las apuestas implican riesgo de perder dinero y
+        pueden causar adicción. Apuesta solo lo que puedas permitirte perder. Los resultados
+        pasados no garantizan resultados futuros. Contenido dirigido a mayores de 18 años.</p>
+      <nav class="enlaces">
+        <a href="https://t.me/databetllm" target="_blank" rel="noopener">Telegram</a>
+        <a href="https://www.tiktok.com/@take.bet3" target="_blank" rel="noopener">TikTok</a>
+        <a href="#historial">Historial</a>
+        <a href="#">Volver arriba</a>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- Payload de datos (solo filas Jugado) como JSON incrustado. -->
+  <script id="databet-data" type="application/json">{"meta": {"generated_at": "2026-10-20", "bank_inicial": 1000.0, "stake": 10.0}, "models": {"over25": {"rows": [{"model": "over25", "liga": "laliga", "fecha": "2026-08-15", "local": "Alaves", "visitante": "Getafe", "prob": 0.4105, "cuota": 3.2, "pnl": 22.0, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-15", "local": "Sevilla", "visitante": "Vallecano", "prob": 0.4146, "cuota": 2.3, "pnl": 13.0, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-16", "local": "Santander", "visitante": "Villarreal", "prob": 0.5137, "cuota": 1.8, "pnl": 8.0, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-16", "local": "Espanol", "visitante": "Levante", "prob": 0.4402, "cuota": 2.2, "pnl": 12.0, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-17", "local": "La Coruna", "visitante": "Elche", "prob": 0.4953, "cuota": 2.3, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-20", "local": "Vallecano", "visitante": "Alaves", "prob": 0.4223, "cuota": 2.75, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-21", "local": "Betis", "visitante": "Sociedad", "prob": 0.4954, "cuota": 1.85, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-21", "local": "Arsenal", "visitante": "Coventry", "prob": 0.6303, "cuota": 1.6, "pnl": 6.0, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-22", "local": "Espanol", "visitante": "Real Madrid", "prob": 0.6154, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "1-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-22", "local": "Valencia", "visitante": "Celta", "prob": 0.429, "cuota": 2.2, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-22", "local": "Ath Bilbao", "visitante": "Sevilla", "prob": 0.3738, "cuota": 2.2, "pnl": 12.0, "resultado": "G", "goles": "1-3"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-22", "local": "Brentford", "visitante": "Tottenham", "prob": 0.5607, "cuota": 2.25, "pnl": 12.5, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-23", "local": "Ath Madrid", "visitante": "Villarreal", "prob": 0.5925, "cuota": 1.88, "pnl": 8.8, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-23", "local": "Getafe", "visitante": "Santander", "prob": 0.3964, "cuota": 2.75, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-23", "local": "Elche", "visitante": "Barcelona", "prob": 0.6345, "cuota": 1.48, "pnl": 4.8, "resultado": "G", "goles": "0-5"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-23", "local": "Man City", "visitante": "Bournemouth", "prob": 0.6178, "cuota": 1.45, "pnl": 4.5, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-23", "local": "Newcastle", "visitante": "Liverpool", "prob": 0.5934, "cuota": 2.0, "pnl": 10.0, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-24", "local": "Malaga", "visitante": "La Coruna", "prob": 0.4429, "cuota": 2.63, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-24", "local": "Osasuna", "visitante": "Levante", "prob": 0.373, "cuota": 2.0, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-25", "local": "Valencia", "visitante": "Betis", "prob": 0.4323, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-26", "local": "Real Madrid", "visitante": "Sociedad", "prob": 0.724, "cuota": 1.45, "pnl": 4.5, "resultado": "G", "goles": "4-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-27", "local": "Barcelona", "visitante": "Ath Bilbao", "prob": 0.747, "cuota": 1.45, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-27", "local": "Celta", "visitante": "Osasuna", "prob": 0.4646, "cuota": 2.2, "pnl": 12.0, "resultado": "G", "goles": "1-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-08-28", "local": "Bayern Munich", "visitante": "Stuttgart", "prob": 0.7454, "cuota": 1.2, "pnl": 2.0, "resultado": "G", "goles": "5-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-28", "local": "Santander", "visitante": "Elche", "prob": 0.4455, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "3-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-28", "local": "Alaves", "visitante": "Villarreal", "prob": 0.406, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-28", "local": "Crystal Palace", "visitante": "Man City", "prob": 0.6226, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "1-4"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-08-29", "local": "Mainz", "visitante": "Paderborn", "prob": 0.6402, "cuota": 1.67, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-08-29", "local": "RB Leipzig", "visitante": "M'gladbach", "prob": 0.6785, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-08-29", "local": "Union Berlin", "visitante": "Ein Frankfurt", "prob": 0.709, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "3-3"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-08-29", "local": "Dortmund", "visitante": "Hamburg", "prob": 0.7618, "cuota": 1.5, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-29", "local": "Levante", "visitante": "Betis", "prob": 0.4011, "cuota": 1.98, "pnl": 9.8, "resultado": "G", "goles": "5-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-29", "local": "Sociedad", "visitante": "Espanol", "prob": 0.4909, "cuota": 1.88, "pnl": 8.8, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-29", "local": "Sevilla", "visitante": "Ath Madrid", "prob": 0.4393, "cuota": 1.98, "pnl": 9.8, "resultado": "G", "goles": "1-3"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-29", "local": "Liverpool", "visitante": "Nott'm Forest", "prob": 0.5685, "cuota": 2.2, "pnl": 12.0, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-29", "local": "Bournemouth", "visitante": "Everton", "prob": 0.5675, "cuota": 2.5, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-08-30", "local": "Augsburg", "visitante": "Schalke 04", "prob": 0.6372, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-08-30", "local": "Freiburg", "visitante": "Werder Bremen", "prob": 0.7686, "cuota": 1.77, "pnl": 7.7, "resultado": "G", "goles": "4-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-30", "local": "Real Madrid", "visitante": "Malaga", "prob": 0.6269, "cuota": 1.33, "pnl": 3.3, "resultado": "G", "goles": "4-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-30", "local": "La Coruna", "visitante": "Valencia", "prob": 0.4474, "cuota": 2.38, "pnl": 13.8, "resultado": "G", "goles": "3-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-30", "local": "Celta", "visitante": "Ath Bilbao", "prob": 0.4223, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-30", "local": "Chelsea", "visitante": "Brighton", "prob": 0.5609, "cuota": 2.25, "pnl": 12.5, "resultado": "G", "goles": "4-3"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-08-30", "local": "Man United", "visitante": "Ipswich", "prob": 0.5814, "cuota": 1.6, "pnl": 6.0, "resultado": "G", "goles": "5-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-31", "local": "Barcelona", "visitante": "Vallecano", "prob": 0.5513, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "5-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-08-31", "local": "Osasuna", "visitante": "Getafe", "prob": 0.4895, "cuota": 3.0, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-03", "local": "Sociedad", "visitante": "Celta", "prob": 0.4379, "cuota": 1.93, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-04", "local": "Stuttgart", "visitante": "FC Koln", "prob": 0.6565, "cuota": 1.38, "pnl": 3.8, "resultado": "G", "goles": "4-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-04", "local": "Betis", "visitante": "Real Madrid", "prob": 0.5841, "cuota": 1.38, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-04", "local": "Ipswich", "visitante": "Liverpool", "prob": 0.6611, "cuota": 1.42, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Schalke 04", "visitante": "Bayern Munich", "prob": 0.7778, "cuota": 1.25, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Werder Bremen", "visitante": "RB Leipzig", "prob": 0.7232, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Hoffenheim", "visitante": "Dortmund", "prob": 0.7594, "cuota": 1.48, "pnl": 4.8, "resultado": "G", "goles": "2-3"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Leverkusen", "visitante": "Union Berlin", "prob": 0.6718, "cuota": 1.45, "pnl": 4.5, "resultado": "G", "goles": "4-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-05", "local": "M'gladbach", "visitante": "Elversberg", "prob": 0.6367, "cuota": 1.6, "pnl": 6.0, "resultado": "G", "goles": "3-4"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-05", "local": "Ath Bilbao", "visitante": "Ath Madrid", "prob": 0.4393, "cuota": 1.91, "pnl": 9.1, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-05", "local": "Vallecano", "visitante": "Santander", "prob": 0.4953, "cuota": 1.83, "pnl": 8.3, "resultado": "G", "goles": "3-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-05", "local": "Villarreal", "visitante": "La Coruna", "prob": 0.4495, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "2-3"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-05", "local": "Nott'm Forest", "visitante": "Tottenham", "prob": 0.5761, "cuota": 2.38, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-05", "local": "Man City", "visitante": "Coventry", "prob": 0.6184, "cuota": 1.36, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-05", "local": "Brighton", "visitante": "Leeds", "prob": 0.5641, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-05", "local": "Brentford", "visitante": "Sunderland", "prob": 0.565, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-05", "local": "Newcastle", "visitante": "Bournemouth", "prob": 0.5686, "cuota": 1.6, "pnl": 6.0, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-06", "local": "Hamburg", "visitante": "Mainz", "prob": 0.6488, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "0-5"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-06", "local": "Ein Frankfurt", "visitante": "Augsburg", "prob": 0.6788, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "1-4"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-06", "local": "Malaga", "visitante": "Levante", "prob": 0.4464, "cuota": 1.98, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-06", "local": "Espanol", "visitante": "Sevilla", "prob": 0.5872, "cuota": 2.38, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-06", "local": "Valencia", "visitante": "Barcelona", "prob": 0.4834, "cuota": 1.38, "pnl": 3.8, "resultado": "G", "goles": "0-5"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-06", "local": "Alaves", "visitante": "Osasuna", "prob": 0.422, "cuota": 2.5, "pnl": 15.0, "resultado": "G", "goles": "5-2"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-06", "local": "Arsenal", "visitante": "Chelsea", "prob": 0.6613, "cuota": 1.77, "pnl": 7.7, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-07", "local": "Getafe", "visitante": "Celta", "prob": 0.4678, "cuota": 3.0, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-07", "local": "Elche", "visitante": "Sociedad", "prob": 0.3902, "cuota": 1.8, "pnl": 8.0, "resultado": "G", "goles": "2-3"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-11", "local": "Union Berlin", "visitante": "Schalke 04", "prob": 0.5568, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "1-3"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-11", "local": "Sevilla", "visitante": "Valencia", "prob": 0.4242, "cuota": 2.3, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Augsburg", "visitante": "Leverkusen", "prob": 0.7717, "cuota": 1.45, "pnl": 4.5, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Freiburg", "visitante": "M'gladbach", "prob": 0.577, "cuota": 1.58, "pnl": 5.8, "resultado": "G", "goles": "5-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Mainz", "visitante": "Ein Frankfurt", "prob": 0.6994, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "1-3"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Hoffenheim", "visitante": "Stuttgart", "prob": 0.7418, "cuota": 1.37, "pnl": 3.7, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-12", "local": "Real Madrid", "visitante": "Vallecano", "prob": 0.7386, "cuota": 1.29, "pnl": 2.9, "resultado": "G", "goles": "4-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-12", "local": "Ath Bilbao", "visitante": "Elche", "prob": 0.477, "cuota": 1.7, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-12", "local": "Osasuna", "visitante": "Espanol", "prob": 0.6516, "cuota": 2.2, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-12", "local": "Santander", "visitante": "Alaves", "prob": 0.4174, "cuota": 1.77, "pnl": 7.7, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-12", "local": "Aston Villa", "visitante": "Nott'm Forest", "prob": 0.5866, "cuota": 1.98, "pnl": 9.8, "resultado": "G", "goles": "1-2"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-12", "local": "Bournemouth", "visitante": "Brentford", "prob": 0.5675, "cuota": 2.5, "pnl": 15.0, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-12", "local": "Crystal Palace", "visitante": "Ipswich", "prob": 0.7114, "cuota": 1.83, "pnl": 8.3, "resultado": "G", "goles": "2-3"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-12", "local": "Liverpool", "visitante": "Fulham", "prob": 0.6477, "cuota": 2.2, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-12", "local": "Sunderland", "visitante": "Arsenal", "prob": 0.624, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-13", "local": "RB Leipzig", "visitante": "Hamburg", "prob": 0.5812, "cuota": 1.42, "pnl": 4.2, "resultado": "G", "goles": "5-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-13", "local": "Elversberg", "visitante": "Bayern Munich", "prob": 0.8359, "cuota": 1.18, "pnl": 1.8, "resultado": "G", "goles": "1-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-13", "local": "Sociedad", "visitante": "Ath Madrid", "prob": 0.3937, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "0-3"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-13", "local": "Getafe", "visitante": "La Coruna", "prob": 0.429, "cuota": 3.2, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-13", "local": "Levante", "visitante": "Barcelona", "prob": 0.4717, "cuota": 1.29, "pnl": 2.9, "resultado": "G", "goles": "2-4"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-13", "local": "Celta", "visitante": "Malaga", "prob": 0.5164, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-13", "local": "Man United", "visitante": "Man City", "prob": 0.5802, "cuota": 1.55, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-14", "local": "Villarreal", "visitante": "Betis", "prob": 0.5424, "cuota": 1.58, "pnl": 5.8, "resultado": "G", "goles": "1-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-15", "local": "Vallecano", "visitante": "Espanol", "prob": 0.4983, "cuota": 1.95, "pnl": 9.5, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-15", "local": "Alaves", "visitante": "Valencia", "prob": 0.5254, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-15", "local": "Elche", "visitante": "Real Madrid", "prob": 0.5924, "cuota": 1.33, "pnl": 3.3, "resultado": "G", "goles": "2-3"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-16", "local": "La Coruna", "visitante": "Sevilla", "prob": 0.4813, "cuota": 2.25, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-16", "local": "Ath Madrid", "visitante": "Osasuna", "prob": 0.6308, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "4-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-17", "local": "Betis", "visitante": "Getafe", "prob": 0.5358, "cuota": 2.2, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-17", "local": "Malaga", "visitante": "Villarreal", "prob": 0.4169, "cuota": 1.65, "pnl": 6.5, "resultado": "G", "goles": "1-3"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-18", "local": "Bayern Munich", "visitante": "Union Berlin", "prob": 0.835, "cuota": 1.1, "pnl": 1.0, "resultado": "G", "goles": "7-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-18", "local": "Espanol", "visitante": "Elche", "prob": 0.4619, "cuota": 1.8, "pnl": 8.0, "resultado": "G", "goles": "1-3"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-18", "local": "Brentford", "visitante": "Chelsea", "prob": 0.565, "cuota": 1.54, "pnl": 5.4, "resultado": "G", "goles": "3-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Stuttgart", "visitante": "Dortmund", "prob": 0.7936, "cuota": 1.42, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Ein Frankfurt", "visitante": "Freiburg", "prob": 0.6938, "cuota": 1.48, "pnl": 4.8, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Hamburg", "visitante": "FC Koln", "prob": 0.542, "cuota": 1.6, "pnl": 6.0, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Werder Bremen", "visitante": "Augsburg", "prob": 0.6836, "cuota": 1.45, "pnl": 4.5, "resultado": "G", "goles": "3-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-19", "local": "Osasuna", "visitante": "Vallecano", "prob": 0.403, "cuota": 2.05, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-19", "local": "Ath Bilbao", "visitante": "Alaves", "prob": 0.4292, "cuota": 1.91, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-19", "local": "Celta", "visitante": "Santander", "prob": 0.4236, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "5-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-19", "local": "Sevilla", "visitante": "Barcelona", "prob": 0.3774, "cuota": 1.25, "pnl": 2.5, "resultado": "G", "goles": "1-3"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-19", "local": "Everton", "visitante": "Ipswich", "prob": 0.6043, "cuota": 1.73, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-19", "local": "Newcastle", "visitante": "Hull", "prob": 0.5978, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-20", "local": "Schalke 04", "visitante": "Elversberg", "prob": 0.6698, "cuota": 1.54, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-20", "local": "Leverkusen", "visitante": "RB Leipzig", "prob": 0.7854, "cuota": 1.37, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-09-20", "local": "Paderborn", "visitante": "Hoffenheim", "prob": 0.6699, "cuota": 1.45, "pnl": 4.5, "resultado": "G", "goles": "3-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-20", "local": "Valencia", "visitante": "Sociedad", "prob": 0.3803, "cuota": 1.93, "pnl": 9.3, "resultado": "G", "goles": "2-3"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-20", "local": "La Coruna", "visitante": "Betis", "prob": 0.4425, "cuota": 1.85, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-20", "local": "Villarreal", "visitante": "Levante", "prob": 0.6425, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-20", "local": "Getafe", "visitante": "Malaga", "prob": 0.4105, "cuota": 2.75, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-09-20", "local": "Ath Madrid", "visitante": "Real Madrid", "prob": 0.8358, "cuota": 1.48, "pnl": 4.8, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-20", "local": "Bournemouth", "visitante": "Liverpool", "prob": 0.5712, "cuota": 2.25, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-09-20", "local": "Man City", "visitante": "Sunderland", "prob": 0.5796, "cuota": 1.58, "pnl": 5.8, "resultado": "G", "goles": "5-3"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-09", "local": "Dortmund", "visitante": "Werder Bremen", "prob": 0.7159, "cuota": 1.4, "pnl": 4.0, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-09", "local": "Malaga", "visitante": "Espanol", "prob": 0.4524, "cuota": 2.05, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Union Berlin", "visitante": "Elversberg", "prob": 0.6732, "cuota": 1.58, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Augsburg", "visitante": "Bayern Munich", "prob": 0.7545, "cuota": 1.15, "pnl": 1.5, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Hoffenheim", "visitante": "Hamburg", "prob": 0.6525, "cuota": 1.4, "pnl": 4.0, "resultado": "G", "goles": "2-3"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Mainz", "visitante": "Leverkusen", "prob": 0.7456, "cuota": 1.48, "pnl": 4.8, "resultado": "G", "goles": "3-4"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Paderborn", "visitante": "Stuttgart", "prob": 0.6634, "cuota": 1.37, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-10", "local": "RB Leipzig", "visitante": "Ein Frankfurt", "prob": 0.7292, "cuota": 1.3, "pnl": 3.0, "resultado": "G", "goles": "6-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-10", "local": "Real Madrid", "visitante": "Villarreal", "prob": 0.5204, "cuota": 1.29, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-10", "local": "Alaves", "visitante": "Ath Madrid", "prob": 0.4379, "cuota": 1.91, "pnl": 9.1, "resultado": "G", "goles": "1-2"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-10-10", "local": "Man United", "visitante": "Tottenham", "prob": 0.6669, "cuota": 1.53, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-10-10", "local": "Aston Villa", "visitante": "Brentford", "prob": 0.6059, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-10-10", "local": "Arsenal", "visitante": "Leeds", "prob": 0.586, "cuota": 1.85, "pnl": 8.5, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-10-10", "local": "Chelsea", "visitante": "Bournemouth", "prob": 0.5792, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "5-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-11", "local": "FC Koln", "visitante": "M'gladbach", "prob": 0.6377, "cuota": 1.52, "pnl": 5.2, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "bundesliga", "fecha": "2026-10-11", "local": "Freiburg", "visitante": "Schalke 04", "prob": 0.7497, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-11", "local": "Sociedad", "visitante": "La Coruna", "prob": 0.4064, "cuota": 1.75, "pnl": 7.5, "resultado": "G", "goles": "3-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-11", "local": "Betis", "visitante": "Osasuna", "prob": 0.5881, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "5-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-11", "local": "Santander", "visitante": "Valencia", "prob": 0.4362, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-2"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-11", "local": "Elche", "visitante": "Celta", "prob": 0.5739, "cuota": 2.0, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "over25", "liga": "premier_league", "fecha": "2026-10-11", "local": "Crystal Palace", "visitante": "Nott'm Forest", "prob": 0.7028, "cuota": 1.91, "pnl": 9.1, "resultado": "G", "goles": "3-1"}, {"model": "over25", "liga": "laliga", "fecha": "2026-10-12", "local": "Levante", "visitante": "Sevilla", "prob": 0.4229, "cuota": 2.05, "pnl": 10.5, "resultado": "G", "goles": "3-3"}], "rendimiento": {"Bank inicial (S/)": 1000.0, "Stake (S/)": 10.0, "N picks": 146.0, "Hit %": 64.38, "Cuota media": 1.81, "P&L (S/)": 132.4, "ROI %": 9.07, "Bank final (S/)": 1132.4}}, "oddchek": {"rows": [{"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-21", "local": "Marseille", "visitante": "Strasbourg", "prob": 0.5991, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "4-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-08-22", "local": "Espanol", "visitante": "Real Madrid", "prob": 0.5568, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "1-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-22", "local": "Lens", "visitante": "Auxerre", "prob": 0.5428, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "5-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-22", "local": "Troyes", "visitante": "Paris FC", "prob": 0.5223, "cuota": 1.73, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-22", "local": "Brentford", "visitante": "Tottenham", "prob": 0.5202, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-22", "local": "Inter", "visitante": "Monza", "prob": 0.5663, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "4-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-22", "local": "Udinese", "visitante": "Como", "prob": 0.5236, "cuota": 2.2, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-08-23", "local": "Elche", "visitante": "Barcelona", "prob": 0.5998, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "0-5"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-23", "local": "Le Havre", "visitante": "Monaco", "prob": 0.5832, "cuota": 1.57, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-23", "local": "Rennes", "visitante": "Paris SG", "prob": 0.5711, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-23", "local": "Man City", "visitante": "Bournemouth", "prob": 0.5689, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-23", "local": "Newcastle", "visitante": "Liverpool", "prob": 0.5887, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-23", "local": "Atalanta", "visitante": "Sassuolo", "prob": 0.5089, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-23", "local": "Frosinone", "visitante": "Juventus", "prob": 0.5594, "cuota": 1.83, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-24", "local": "Fulham", "visitante": "Chelsea", "prob": 0.5328, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-3"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-24", "local": "Roma", "visitante": "Fiorentina", "prob": 0.5548, "cuota": 1.88, "pnl": 8.8, "resultado": "G", "goles": "4-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-08-26", "local": "Real Madrid", "visitante": "Sociedad", "prob": 0.5943, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "4-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-08-27", "local": "Barcelona", "visitante": "Ath Bilbao", "prob": 0.6013, "cuota": 1.44, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-08-28", "local": "Bayern Munich", "visitante": "Stuttgart", "prob": 0.7541, "cuota": 1.2, "pnl": 2.0, "resultado": "G", "goles": "5-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-08-28", "local": "Alaves", "visitante": "Villarreal", "prob": 0.5085, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-28", "local": "Lille", "visitante": "Paris SG", "prob": 0.5291, "cuota": 1.8, "pnl": 8.0, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-28", "local": "Crystal Palace", "visitante": "Man City", "prob": 0.5429, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "1-4"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-28", "local": "Milan", "visitante": "Venezia", "prob": 0.5306, "cuota": 1.73, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-08-29", "local": "RB Leipzig", "visitante": "M'gladbach", "prob": 0.5497, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-08-29", "local": "FC Koln", "visitante": "Hoffenheim", "prob": 0.5839, "cuota": 1.53, "pnl": 5.3, "resultado": "G", "goles": "3-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-08-29", "local": "Dortmund", "visitante": "Hamburg", "prob": 0.5917, "cuota": 1.5, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-08-29", "local": "Union Berlin", "visitante": "Ein Frankfurt", "prob": 0.5226, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "3-3"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-29", "local": "Lyon", "visitante": "Le Havre", "prob": 0.5497, "cuota": 1.73, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-29", "local": "Strasbourg", "visitante": "Lens", "prob": 0.5359, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-29", "local": "Brest", "visitante": "Toulouse", "prob": 0.5029, "cuota": 2.0, "pnl": 10.0, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-29", "local": "Tottenham", "visitante": "Newcastle", "prob": 0.5179, "cuota": 1.62, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-29", "local": "Liverpool", "visitante": "Nott'm Forest", "prob": 0.5701, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-29", "local": "Juventus", "visitante": "Parma", "prob": 0.5567, "cuota": 1.67, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-29", "local": "Fiorentina", "visitante": "Frosinone", "prob": 0.5235, "cuota": 1.8, "pnl": 8.0, "resultado": "G", "goles": "0-3"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-08-30", "local": "Real Madrid", "visitante": "Malaga", "prob": 0.7249, "cuota": 1.33, "pnl": 3.3, "resultado": "G", "goles": "4-0"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-08-30", "local": "Monaco", "visitante": "Marseille", "prob": 0.5162, "cuota": 1.57, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-30", "local": "Chelsea", "visitante": "Brighton", "prob": 0.5315, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "4-3"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-30", "local": "Man United", "visitante": "Ipswich", "prob": 0.5291, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "5-2"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-30", "local": "Cagliari", "visitante": "Inter", "prob": 0.5696, "cuota": 1.93, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-08-31", "local": "Barcelona", "visitante": "Vallecano", "prob": 0.6752, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "5-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-08-31", "local": "Aston Villa", "visitante": "Arsenal", "prob": 0.6083, "cuota": 1.83, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-08-31", "local": "Lecce", "visitante": "Roma", "prob": 0.5271, "cuota": 2.1, "pnl": 11.0, "resultado": "G", "goles": "0-4"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-04", "local": "Stuttgart", "visitante": "FC Koln", "prob": 0.5459, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "4-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-04", "local": "Betis", "visitante": "Real Madrid", "prob": 0.6012, "cuota": 1.36, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-04", "local": "Paris SG", "visitante": "Monaco", "prob": 0.6744, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "1-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-04", "local": "Lyon", "visitante": "Auxerre", "prob": 0.578, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "3-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-04", "local": "Ipswich", "visitante": "Liverpool", "prob": 0.549, "cuota": 1.4, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Leverkusen", "visitante": "Union Berlin", "prob": 0.5436, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "4-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Hoffenheim", "visitante": "Dortmund", "prob": 0.5603, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "2-3"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Schalke 04", "visitante": "Bayern Munich", "prob": 0.6548, "cuota": 1.22, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-05", "local": "Werder Bremen", "visitante": "RB Leipzig", "prob": 0.5194, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-05", "local": "Villarreal", "visitante": "La Coruna", "prob": 0.5686, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "2-3"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-05", "local": "Lens", "visitante": "Lorient", "prob": 0.5403, "cuota": 1.62, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-05", "local": "Man City", "visitante": "Coventry", "prob": 0.6623, "cuota": 1.36, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-05", "local": "Brentford", "visitante": "Sunderland", "prob": 0.5837, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-05", "local": "Hull", "visitante": "Aston Villa", "prob": 0.5433, "cuota": 1.88, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-05", "local": "Roma", "visitante": "Atalanta", "prob": 0.5586, "cuota": 1.93, "pnl": 9.3, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-05", "local": "Inter", "visitante": "Napoli", "prob": 0.5301, "cuota": 2.05, "pnl": 10.5, "resultado": "G", "goles": "3-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-06", "local": "Ein Frankfurt", "visitante": "Augsburg", "prob": 0.5298, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "1-4"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-06", "local": "Valencia", "visitante": "Barcelona", "prob": 0.619, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "0-5"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-06", "local": "Troyes", "visitante": "Strasbourg", "prob": 0.5232, "cuota": 1.88, "pnl": 8.8, "resultado": "G", "goles": "2-6"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-06", "local": "Marseille", "visitante": "Paris FC", "prob": 0.547, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-3"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-06", "local": "Angers", "visitante": "Rennes", "prob": 0.5524, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "1-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-06", "local": "Everton", "visitante": "Man United", "prob": 0.5079, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-06", "local": "Arsenal", "visitante": "Chelsea", "prob": 0.5641, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-11", "local": "Rennes", "visitante": "Marseille", "prob": 0.5638, "cuota": 1.5, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Mainz", "visitante": "Ein Frankfurt", "prob": 0.5794, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "1-3"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Freiburg", "visitante": "M'gladbach", "prob": 0.5447, "cuota": 1.53, "pnl": 5.3, "resultado": "G", "goles": "5-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Augsburg", "visitante": "Leverkusen", "prob": 0.5805, "cuota": 1.4, "pnl": 4.0, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Dortmund", "visitante": "Paderborn", "prob": 0.6197, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-12", "local": "Hoffenheim", "visitante": "Stuttgart", "prob": 0.5939, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-12", "local": "FC Koln", "visitante": "Werder Bremen", "prob": 0.5581, "cuota": 1.53, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-12", "local": "Ath Bilbao", "visitante": "Elche", "prob": 0.5341, "cuota": 1.67, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-12", "local": "Real Madrid", "visitante": "Vallecano", "prob": 0.7007, "cuota": 1.29, "pnl": 2.9, "resultado": "G", "goles": "4-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-12", "local": "Paris FC", "visitante": "Lyon", "prob": 0.5052, "cuota": 1.67, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-12", "local": "Strasbourg", "visitante": "Monaco", "prob": 0.5964, "cuota": 1.57, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-12", "local": "Sunderland", "visitante": "Arsenal", "prob": 0.5641, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-12", "local": "Liverpool", "visitante": "Fulham", "prob": 0.5503, "cuota": 1.44, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-12", "local": "Chelsea", "visitante": "Hull", "prob": 0.5661, "cuota": 1.4, "pnl": 4.0, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-12", "local": "Bournemouth", "visitante": "Brentford", "prob": 0.5016, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-12", "local": "Crystal Palace", "visitante": "Ipswich", "prob": 0.5335, "cuota": 1.8, "pnl": 8.0, "resultado": "G", "goles": "2-3"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-13", "local": "Elversberg", "visitante": "Bayern Munich", "prob": 0.61, "cuota": 1.17, "pnl": 1.7, "resultado": "G", "goles": "1-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-13", "local": "RB Leipzig", "visitante": "Hamburg", "prob": 0.5344, "cuota": 1.4, "pnl": 4.0, "resultado": "G", "goles": "5-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-13", "local": "Sociedad", "visitante": "Ath Madrid", "prob": 0.5083, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "0-3"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-13", "local": "Levante", "visitante": "Barcelona", "prob": 0.6015, "cuota": 1.29, "pnl": 2.9, "resultado": "G", "goles": "2-4"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-13", "local": "Celta", "visitante": "Malaga", "prob": 0.5094, "cuota": 2.1, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-13", "local": "Le Mans", "visitante": "Lens", "prob": 0.5626, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-13", "local": "Brest", "visitante": "Paris SG", "prob": 0.6271, "cuota": 1.4, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-13", "local": "Lille", "visitante": "Troyes", "prob": 0.5357, "cuota": 1.67, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-13", "local": "Coventry", "visitante": "Brighton", "prob": 0.5473, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "0-5"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-13", "local": "Man United", "visitante": "Man City", "prob": 0.5972, "cuota": 1.53, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-13", "local": "Sassuolo", "visitante": "Juventus", "prob": 0.5394, "cuota": 1.83, "pnl": 8.3, "resultado": "G", "goles": "3-2"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-14", "local": "Villarreal", "visitante": "Betis", "prob": 0.6133, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "1-2"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-14", "local": "Como", "visitante": "Parma", "prob": 0.5391, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-14", "local": "Torino", "visitante": "Roma", "prob": 0.5356, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-14", "local": "Inter", "visitante": "Udinese", "prob": 0.612, "cuota": 1.53, "pnl": 5.3, "resultado": "G", "goles": "5-3"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-15", "local": "Elche", "visitante": "Real Madrid", "prob": 0.555, "cuota": 1.3, "pnl": 3.0, "resultado": "G", "goles": "2-3"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-16", "local": "Ath Madrid", "visitante": "Osasuna", "prob": 0.5626, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "4-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-16", "local": "Barcelona", "visitante": "Santander", "prob": 0.741, "cuota": 1.13, "pnl": 1.3, "resultado": "G", "goles": "7-2"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-17", "local": "Betis", "visitante": "Getafe", "prob": 0.5369, "cuota": 2.2, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-17", "local": "Malaga", "visitante": "Villarreal", "prob": 0.5112, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "1-3"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-18", "local": "Bayern Munich", "visitante": "Union Berlin", "prob": 0.6571, "cuota": 1.1, "pnl": 1.0, "resultado": "G", "goles": "7-0"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-18", "local": "Monaco", "visitante": "Lens", "prob": 0.5428, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-18", "local": "Brentford", "visitante": "Chelsea", "prob": 0.5794, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-18", "local": "Monza", "visitante": "Sassuolo", "prob": 0.5237, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Werder Bremen", "visitante": "Augsburg", "prob": 0.5763, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "3-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Ein Frankfurt", "visitante": "Freiburg", "prob": 0.5493, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Stuttgart", "visitante": "Dortmund", "prob": 0.5666, "cuota": 1.4, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-19", "local": "Hamburg", "visitante": "FC Koln", "prob": 0.51, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-19", "local": "M'gladbach", "visitante": "Mainz", "prob": 0.5396, "cuota": 1.53, "pnl": 5.3, "resultado": "G", "goles": "3-4"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-19", "local": "Celta", "visitante": "Santander", "prob": 0.526, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "5-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-19", "local": "Ath Bilbao", "visitante": "Alaves", "prob": 0.5038, "cuota": 1.9, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-19", "local": "Sevilla", "visitante": "Barcelona", "prob": 0.6491, "cuota": 1.25, "pnl": 2.5, "resultado": "G", "goles": "1-3"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-19", "local": "Paris FC", "visitante": "Strasbourg", "prob": 0.5799, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-19", "local": "Lyon", "visitante": "Rennes", "prob": 0.5575, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "4-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-19", "local": "Newcastle", "visitante": "Hull", "prob": 0.5305, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-19", "local": "Everton", "visitante": "Ipswich", "prob": 0.534, "cuota": 1.73, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-19", "local": "Brighton", "visitante": "Arsenal", "prob": 0.5408, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-19", "local": "Nott'm Forest", "visitante": "Coventry", "prob": 0.5206, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-19", "local": "Venezia", "visitante": "Lazio", "prob": 0.5055, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-20", "local": "Paderborn", "visitante": "Hoffenheim", "prob": 0.5248, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "3-1"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-20", "local": "Leverkusen", "visitante": "RB Leipzig", "prob": 0.6053, "cuota": 1.36, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-09-20", "local": "Schalke 04", "visitante": "Elversberg", "prob": 0.5201, "cuota": 1.53, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-20", "local": "Ath Madrid", "visitante": "Real Madrid", "prob": 0.5672, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-20", "local": "Villarreal", "visitante": "Levante", "prob": 0.5467, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-09-20", "local": "La Coruna", "visitante": "Betis", "prob": 0.5337, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-20", "local": "Marseille", "visitante": "Paris SG", "prob": 0.602, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "1-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-09-20", "local": "Nice", "visitante": "Lille", "prob": 0.5004, "cuota": 1.93, "pnl": 9.3, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-20", "local": "Fulham", "visitante": "Man United", "prob": 0.5299, "cuota": 1.57, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-20", "local": "Man City", "visitante": "Sunderland", "prob": 0.625, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "5-3"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-20", "local": "Bournemouth", "visitante": "Liverpool", "prob": 0.603, "cuota": 1.5, "pnl": -10.0, "resultado": "P", "goles": "0-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-09-20", "local": "Leeds", "visitante": "Crystal Palace", "prob": 0.5345, "cuota": 1.73, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-20", "local": "Juventus", "visitante": "Atalanta", "prob": 0.5163, "cuota": 1.91, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-20", "local": "Milan", "visitante": "Lecce", "prob": 0.5774, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-09-20", "local": "Frosinone", "visitante": "Como", "prob": 0.5486, "cuota": 1.44, "pnl": -10.0, "resultado": "P", "goles": "2-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-09", "local": "Dortmund", "visitante": "Werder Bremen", "prob": 0.5769, "cuota": 1.4, "pnl": 4.0, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-10-09", "local": "Lens", "visitante": "Lyon", "prob": 0.525, "cuota": 1.53, "pnl": 5.3, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Mainz", "visitante": "Leverkusen", "prob": 0.5626, "cuota": 1.44, "pnl": 4.4, "resultado": "G", "goles": "3-4"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Paderborn", "visitante": "Stuttgart", "prob": 0.5127, "cuota": 1.36, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-10", "local": "RB Leipzig", "visitante": "Ein Frankfurt", "prob": 0.6077, "cuota": 1.3, "pnl": 3.0, "resultado": "G", "goles": "6-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Hoffenheim", "visitante": "Hamburg", "prob": 0.5326, "cuota": 1.4, "pnl": 4.0, "resultado": "G", "goles": "2-3"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Union Berlin", "visitante": "Elversberg", "prob": 0.5275, "cuota": 1.53, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-10", "local": "Augsburg", "visitante": "Bayern Munich", "prob": 0.638, "cuota": 1.14, "pnl": 1.4, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-10-10", "local": "Alaves", "visitante": "Ath Madrid", "prob": 0.5771, "cuota": 1.91, "pnl": 9.1, "resultado": "G", "goles": "1-2"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-10-10", "local": "Real Madrid", "visitante": "Villarreal", "prob": 0.6424, "cuota": 1.29, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-10-10", "local": "Barcelona", "visitante": "Getafe", "prob": 0.7671, "cuota": 1.25, "pnl": 2.5, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-10-10", "local": "Monaco", "visitante": "Toulouse", "prob": 0.5476, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-10-10", "local": "Paris SG", "visitante": "Le Mans", "prob": 0.7053, "cuota": 1.22, "pnl": 2.2, "resultado": "G", "goles": "3-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-10-10", "local": "Lille", "visitante": "Le Havre", "prob": 0.5193, "cuota": 1.62, "pnl": -10.0, "resultado": "P", "goles": "1-0"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-10-10", "local": "Sunderland", "visitante": "Brighton", "prob": 0.5108, "cuota": 1.8, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-10-10", "local": "Man United", "visitante": "Tottenham", "prob": 0.5671, "cuota": 1.53, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-10-10", "local": "Aston Villa", "visitante": "Brentford", "prob": 0.5049, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "2-2"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-10-10", "local": "Arsenal", "visitante": "Leeds", "prob": 0.5803, "cuota": 1.85, "pnl": 8.5, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-10-10", "local": "Chelsea", "visitante": "Bournemouth", "prob": 0.5639, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "5-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-10-10", "local": "Inter", "visitante": "Parma", "prob": 0.6261, "cuota": 1.36, "pnl": 3.6, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-10-10", "local": "Napoli", "visitante": "Frosinone", "prob": 0.5439, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "3-0"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-11", "local": "Freiburg", "visitante": "Schalke 04", "prob": 0.5336, "cuota": 1.62, "pnl": 6.2, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "bundesliga", "fecha": "2026-10-11", "local": "FC Koln", "visitante": "M'gladbach", "prob": 0.5491, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-10-11", "local": "Betis", "visitante": "Osasuna", "prob": 0.5167, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "5-2"}, {"model": "oddchek", "liga": "laliga", "fecha": "2026-10-11", "local": "Sociedad", "visitante": "La Coruna", "prob": 0.5412, "cuota": 1.73, "pnl": 7.3, "resultado": "G", "goles": "3-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-10-11", "local": "Troyes", "visitante": "Marseille", "prob": 0.5505, "cuota": 1.57, "pnl": -10.0, "resultado": "P", "goles": "0-2"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-10-11", "local": "Nice", "visitante": "Strasbourg", "prob": 0.5156, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "2-1"}, {"model": "oddchek", "liga": "ligue_1", "fecha": "2026-10-11", "local": "Rennes", "visitante": "Auxerre", "prob": 0.5759, "cuota": 1.5, "pnl": 5.0, "resultado": "G", "goles": "4-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-10-11", "local": "Liverpool", "visitante": "Man City", "prob": 0.5567, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "0-3"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-10-11", "local": "Sassuolo", "visitante": "Milan", "prob": 0.5006, "cuota": 1.73, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-10-11", "local": "Como", "visitante": "Roma", "prob": 0.5633, "cuota": 1.67, "pnl": -10.0, "resultado": "P", "goles": "0-0"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-10-11", "local": "Cagliari", "visitante": "Juventus", "prob": 0.5055, "cuota": 2.0, "pnl": -10.0, "resultado": "P", "goles": "1-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-10-11", "local": "Lazio", "visitante": "Monza", "prob": 0.5136, "cuota": 1.85, "pnl": 8.5, "resultado": "G", "goles": "3-1"}, {"model": "oddchek", "liga": "premier_league", "fecha": "2026-10-12", "local": "Coventry", "visitante": "Newcastle", "prob": 0.5217, "cuota": 1.67, "pnl": 6.7, "resultado": "G", "goles": "4-1"}, {"model": "oddchek", "liga": "serie_a", "fecha": "2026-10-12", "local": "Atalanta", "visitante": "Venezia", "prob": 0.5217, "cuota": 1.57, "pnl": 5.7, "resultado": "G", "goles": "3-1"}], "rendimiento": {"Bank inicial (S/)": 1000.0, "Stake (S/)": 10.0, "N picks": 170.0, "Hit %": 66.47, "Cuota media": 1.59, "P&L (S/)": 65.4, "ROI %": 3.85, "Bank final (S/)": 1065.4}}}}</script>
+
+  <!-- Lógica pura (web/app.mjs) + cableado de la UI, todo inline: la página
+       es autocontenida y solo depende de los CDN de Plotly e Inter. -->
+  <script type="module">
+// Data Bet — lógica pura de la página pública.
+//
+// Se incrusta inline en el index.html renderizado (no viaja como archivo
+// externo) y se testea con node --test (tests/web/app.test.mjs).
+// Solo funciones puras: la UI (template.html) las llama para filtrar y
+// recalcular los indicadores en el navegador.
+//
+// Convención de dinero del proyecto (espejo de update_registro.py):
+// stake 10 S/, bank inicial 1.000 S/, P&L = (cuota − 1) × 10 si G, −10 si P,
+// ROI = P&L / (N × 10) × 100, EV = prob × cuota − 1.
+
+const STAKE = 10;
+const BANK_INICIAL = 1000;
+
+/** Valor esperado por unidad apostada: prob × cuota − 1. */
+export function evOf(prob, cuota) {
+  return prob * cuota - 1;
+}
+
+/** Minúsculas, sin acentos (NFD) y espacios colapsados/recortados. */
+export function normName(s) {
+  return String(s ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Variantes de un nombre para el filtro de equipo. Además del NFD puro
+// ("Español" -> "espanol") se añade la transliteración ñ -> "ny"
+// ("Español" -> "espanyol"), así el visitante encuentra al equipo aunque lo
+// escriba en cualquiera de las dos formas.
+function variantesNombre(s) {
+  const base = normName(s);
+  const ny = normName(String(s ?? "").replace(/ñ/g, "ny"));
+  return base === ny ? [base] : [base, ny];
+}
+
+// ¿El nombre del equipo coincide con lo buscado? Emparejamiento por
+// inclusión en ambos sentidos sobre las variantes normalizadas.
+function coincideNombre(nombre, buscado) {
+  const variantes = variantesNombre(nombre).filter((v) => v !== "");
+  const objetivos = variantesNombre(buscado).filter((v) => v !== "");
+  if (variantes.length === 0 || objetivos.length === 0) return false;
+  return variantes.some((v) => objetivos.some((o) => v.includes(o) || o.includes(v)));
+}
+
+// Un límite de rango solo está activo si existe, no es cadena vacía y es un
+// número finito. Rangos vacíos/ausentes = sin límite.
+function limiteActivo(valor) {
+  return (
+    valor !== undefined && valor !== null && valor !== "" && Number.isFinite(Number(valor))
+  );
+}
+
+// Rango numérico inclusivo. Si el valor de la fila falta o es NaN, nunca
+// pasa cuando hay algún límite activo.
+function pasaRango(valor, minimo, maximo) {
+  const hayMin = limiteActivo(minimo);
+  const hayMax = limiteActivo(maximo);
+  if (!hayMin && !hayMax) return true;
+  if (typeof valor !== "number" || !Number.isFinite(valor)) return false;
+  if (hayMin && valor < Number(minimo)) return false;
+  if (hayMax && valor > Number(maximo)) return false;
+  return true;
+}
+
+// Rango de fechas ISO YYYY-MM-DD (comparación lexicográfica, inclusivo).
+function pasaFechas(fecha, desde, hasta) {
+  if (!desde && !hasta) return true;
+  if (typeof fecha !== "string" || fecha === "") return false;
+  if (desde && fecha < desde) return false;
+  if (hasta && fecha > hasta) return false;
+  return true;
+}
+
+/**
+ * Filtra filas de picks combinando todos los filtros con Y.
+ *
+ * filters = {modelo:"oddchek"|"over25"|"ambos", ligas:Set (vacío=todas),
+ *   equipo:"", lado:"local"|"visitante"|"todos", cuotaMin, cuotaMax,
+ *   probMin, probMax, evMin, evMax, fechaDesde, fechaHasta,
+ *   resultado:"G"|"P"|"todos"}.
+ * `equipo` empareja contra local o visitante (según `lado`) con normName;
+ * el EV se filtra sobre evOf(prob, cuota). Rangos vacíos/ausentes = sin
+ * límite; NaN/ausente en la fila nunca pasa un filtro numérico activo.
+ */
+export function applyFilters(rows, filters = {}) {
+  const filas = Array.isArray(rows) ? rows : [];
+  const ligas = new Set(filters.ligas ?? []);
+  const modelo = filters.modelo ?? "ambos";
+  const equipo = typeof filters.equipo === "string" ? filters.equipo.trim() : "";
+  const lado = filters.lado ?? "todos";
+  const resultado = filters.resultado ?? "todos";
+  const camposEquipo =
+    lado === "local" ? ["local"] : lado === "visitante" ? ["visitante"] : ["local", "visitante"];
+
+  return filas.filter((fila) => {
+    if (!fila) return false;
+    if (modelo !== "ambos" && fila.model !== modelo) return false;
+    if (ligas.size > 0 && !ligas.has(fila.liga)) return false;
+    if (resultado !== "todos" && fila.resultado !== resultado) return false;
+    if (equipo !== "" && !camposEquipo.some((campo) => coincideNombre(fila[campo], equipo))) {
+      return false;
+    }
+    if (!pasaRango(fila.cuota, filters.cuotaMin, filters.cuotaMax)) return false;
+    if (!pasaRango(fila.prob, filters.probMin, filters.probMax)) return false;
+    if (!pasaRango(evOf(fila.prob, fila.cuota), filters.evMin, filters.evMax)) return false;
+    if (!pasaFechas(fila.fecha, filters.fechaDesde, filters.fechaHasta)) return false;
+    return true;
+  });
+}
+
+/**
+ * KPIs sobre un subconjunto de picks (la convención de dinero del proyecto).
+ * Devuelve {n, hit, cuotaMedia, pnl, roi, bank}; nunca NaN: los valores
+ * ausentes o no finitos no cuentan en las medias ni en las sumas.
+ */
+export function computeKpis(rows) {
+  const filas = Array.isArray(rows) ? rows : [];
+  const n = filas.length;
+  const ganados = filas.filter((fila) => fila && fila.resultado === "G").length;
+  const hit = n === 0 ? 0 : (ganados / n) * 100;
+
+  const cuotas = filas
+    .map((fila) => (fila ? fila.cuota : undefined))
+    .filter((v) => typeof v === "number" && Number.isFinite(v));
+  const cuotaMedia = cuotas.length === 0 ? 0 : cuotas.reduce((a, b) => a + b, 0) / cuotas.length;
+
+  // P&L mostrado viene del payload (fuente única: el generador); la convención (G → (cuota−1)×10, P → −10) queda fijada por el test de derivación en tests/web/app.test.mjs.
+  const pnl = filas.reduce(
+    (total, fila) =>
+      total + (fila && typeof fila.pnl === "number" && Number.isFinite(fila.pnl) ? fila.pnl : 0),
+    0
+  );
+  const roi = n === 0 ? 0 : (pnl / (n * STAKE)) * 100;
+
+  return { n, hit, cuotaMedia, pnl, roi, bank: BANK_INICIAL + pnl };
+}
+
+/**
+ * Curva de bank acumulado: [{fecha, bank}] ordenadas por fecha, con el bank
+ * (inicial 1.000 S/) acumulando el P&L de cada pick. P&L no finito cuenta
+ * como 0 para no envenenar la curva.
+ */
+export function equityCurve(rows) {
+  const filas = Array.isArray(rows) ? rows : [];
+  const ordenadas = [...filas].sort(comparaFecha);
+  let bank = BANK_INICIAL;
+  return ordenadas.map((fila) => {
+    const pnl =
+      fila && typeof fila.pnl === "number" && Number.isFinite(fila.pnl) ? fila.pnl : 0;
+    bank += pnl;
+    return { fecha: fila ? fila.fecha : "", bank };
+  });
+}
+
+function comparaFecha(a, b) {
+  const fa = String((a && a.fecha) ?? "");
+  const fb = String((b && b.fecha) ?? "");
+  return fa < fb ? -1 : fa > fb ? 1 : 0;
+}
+
+
+    // ===================== Cableado de la UI =====================
+    // La página consume window.DATABET_DATA (el JSON de arriba) y llama a
+    // las funciones puras incrustadas de app.mjs.
+
+    const DATA = JSON.parse(document.getElementById("databet-data").textContent);
+    window.DATABET_DATA = DATA;
+
+    const MODELO_INFO = {
+      oddchek: { nombre: "Oddcheck", color: "#0F5CFF" },
+      over25: { nombre: "Over 2.5", color: "#A3E635" },
+    };
+    const NOMBRE_LIGAS = {
+      premier_league: "Premier League",
+      laliga: "LaLiga",
+      serie_a: "Serie A",
+      bundesliga: "Bundesliga",
+      ligue_1: "Ligue 1",
+    };
+    const BANK0 = (DATA.meta && DATA.meta.bank_inicial) || 1000;
+
+    let modeloActivo = "ambos";
+    let orden = { clave: "fecha", dir: "desc" };
+    let visibles = [];
+
+    // ---------- utilidades ----------
+    function $(id) {
+      return document.getElementById(id);
+    }
+    function esc(valor) {
+      return String(valor ?? "").replace(/[&<>"']/g, (c) => ({
+        "&": "&" + "amp;",
+        "<": "&" + "lt;",
+        ">": "&" + "gt;",
+        '"': "&" + "quot;",
+        "'": "&" + "#39;",
+      })[c]);
+    }
+    function fmtSoles(valor, conSigno = true) {
+      const abs = Math.abs(valor).toLocaleString("es-PE", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      const signo = conSigno && valor > 0 ? "+" : valor < 0 ? "-" : "";
+      return signo + abs + " S/";
+    }
+    function fmtNum(valor, decimales = 2) {
+      return Number.isFinite(valor) ? valor.toFixed(decimales) : "—";
+    }
+    function fmtPct(valor, decimales = 1, conSigno = false) {
+      if (!Number.isFinite(valor)) return "—";
+      const signo = conSigno && valor > 0 ? "+" : "";
+      return (
+        signo +
+        valor.toLocaleString("es-PE", { maximumFractionDigits: decimales }) +
+        " %"
+      );
+    }
+    function filasModelo(id) {
+      return (((DATA.models || {})[id] || {}).rows) || [];
+    }
+    function filasModeloActivo() {
+      return modeloActivo === "ambos"
+        ? [...filasModelo("oddchek"), ...filasModelo("over25")]
+        : filasModelo(modeloActivo);
+    }
+
+    // ---------- filtros ----------
+    function valorNum(id) {
+      const texto = $(id).value.trim();
+      return texto === "" ? undefined : Number(texto);
+    }
+    function leerFiltros() {
+      const ligas = new Set(
+        [...document.querySelectorAll('input[name="liga"]:checked')].map((c) => c.value)
+      );
+      const probMin = valorNum("filtro-prob-min");
+      const probMax = valorNum("filtro-prob-max");
+      return {
+        modelo: modeloActivo,
+        ligas,
+        equipo: $("filtro-equipo").value,
+        lado: $("filtro-lado").value,
+        cuotaMin: valorNum("filtro-cuota-min"),
+        cuotaMax: valorNum("filtro-cuota-max"),
+        probMin: probMin === undefined ? undefined : probMin / 100,
+        probMax: probMax === undefined ? undefined : probMax / 100,
+        evMin: valorNum("filtro-ev-min"),
+        evMax: valorNum("filtro-ev-max"),
+        fechaDesde: $("filtro-desde").value || undefined,
+        fechaHasta: $("filtro-hasta").value || undefined,
+        resultado: $("filtro-resultado").value,
+      };
+    }
+    function limpiarFiltros() {
+      [
+        "filtro-equipo", "filtro-cuota-min", "filtro-cuota-max", "filtro-prob-min",
+        "filtro-prob-max", "filtro-ev-min", "filtro-ev-max", "filtro-desde", "filtro-hasta",
+      ].forEach((id) => ($(id).value = ""));
+      $("filtro-lado").value = "todos";
+      $("filtro-resultado").value = "todos";
+      document.querySelectorAll('input[name="liga"]').forEach((c) => (c.checked = false));
+      refrescar();
+    }
+
+    // ---------- render ----------
+    function refrescar() {
+      visibles = applyFilters(filasModeloActivo(), leerFiltros());
+      pintarKpis(computeKpis(visibles));
+      pintarCurva(equityCurve(visibles));
+      pintarTabla();
+    }
+
+    function marcar(punto, clase) {
+      punto.className = "punto " + clase;
+    }
+    function claseValor(el, valor) {
+      el.classList.toggle("pos", valor > 0);
+      el.classList.toggle("neg", valor < 0);
+    }
+    function pintarKpis(kpis) {
+      $("kpi-n").textContent = String(kpis.n);
+      $("kpi-hit").textContent = fmtPct(kpis.hit);
+      $("kpi-roi").textContent = fmtPct(kpis.roi, 2, true);
+      $("kpi-pnl").textContent = fmtSoles(kpis.pnl);
+      $("kpi-bank").textContent = fmtSoles(kpis.bank, false);
+
+      marcar($("dot-n"), "neutro");
+      marcar(
+        $("dot-hit"),
+        kpis.hit >= 55 ? "ganado" : kpis.hit >= 50 ? "aviso" : "perdido"
+      );
+      marcar($("dot-roi"), kpis.roi > 0 ? "ganado" : kpis.roi < 0 ? "perdido" : "aviso");
+      marcar($("dot-pnl"), kpis.pnl > 0 ? "ganado" : kpis.pnl < 0 ? "perdido" : "aviso");
+      marcar(
+        $("dot-bank"),
+        kpis.bank > BANK0 ? "ganado" : kpis.bank < BANK0 ? "perdido" : "aviso"
+      );
+      claseValor($("kpi-roi"), kpis.roi);
+      claseValor($("kpi-pnl"), kpis.pnl);
+      claseValor($("kpi-bank"), kpis.bank - BANK0);
+    }
+
+    // ---------- curva Plotly ----------
+    const CONFIG_CURVA = { responsive: true, displayModeBar: false };
+    function layoutCurva() {
+      return {
+        margin: { l: 60, r: 18, t: 12, b: 34 },
+        paper_bgcolor: "rgba(0,0,0,0)",
+        plot_bgcolor: "rgba(0,0,0,0)",
+        font: { family: "Inter, system-ui, sans-serif", size: 11.5, color: "#90A2C6" },
+        showlegend: false,
+        hovermode: "closest",
+        xaxis: {
+          gridcolor: "rgba(255,255,255,.06)",
+          zeroline: false,
+          tickformat: "%d %b",
+          hoverformat: "%d %b %Y",
+        },
+        yaxis: {
+          gridcolor: "rgba(255,255,255,.06)",
+          zeroline: false,
+          tickprefix: "S/ ",
+          title: { text: "Bank", font: { size: 11 } },
+        },
+      };
+    }
+    function trazaPuntos(puntos, color) {
+      return {
+        type: "scatter",
+        mode: "lines+markers",
+        x: puntos.map((p) => p.fecha),
+        y: puntos.map((p) => p.bank),
+        line: { color, width: 2.6 },
+        marker: { size: 5, color },
+        hovertemplate: "%{x}<br>Bank: S/ %{y:.2f}<extra></extra>",
+      };
+    }
+    function trazasCurva(puntos) {
+      if (modeloActivo === "oddchek") return [trazaPuntos(puntos, "#0F5CFF")];
+      if (modeloActivo === "over25") return [trazaPuntos(puntos, "#A3E635")];
+      if (puntos.length < 2) return [trazaPuntos(puntos, "#0F5CFF")];
+      // "Ambos" lleva el degradado firma de cobalto a lima a lo largo del tiempo.
+      const corte = Math.floor(puntos.length / 2);
+      return [
+        trazaPuntos(puntos.slice(0, corte + 1), "#0F5CFF"),
+        trazaPuntos(puntos.slice(corte), "#A3E635"),
+      ];
+    }
+    function pintarCurva(puntos) {
+      const div = $("curva-bank");
+      const vacio = $("curva-vacio");
+      if (typeof Plotly === "undefined") {
+        vacio.textContent = "La curva necesita conexión (no cargó Plotly). Los KPIs y la tabla funcionan igual.";
+        vacio.hidden = false;
+        return;
+      }
+      if (puntos.length === 0) {
+        if (div.classList.contains("js-plotly-plot")) Plotly.purge(div);
+        vacio.textContent = "Ningún pick con estos filtros.";
+        vacio.hidden = false;
+        return;
+      }
+      vacio.hidden = true;
+      Plotly.newPlot(div, trazasCurva(puntos), layoutCurva(), CONFIG_CURVA);
+    }
+
+    // ---------- tabla ----------
+    function valorCol(f, clave) {
+      if (clave === "partido") return normName(f.local) + " " + normName(f.visitante);
+      if (clave === "ev") return evOf(f.prob, f.cuota);
+      return f[clave];
+    }
+    function ordenarFilas(filas) {
+      const signo = orden.dir === "asc" ? 1 : -1;
+      return [...filas].sort((a, b) => {
+        const va = valorCol(a, orden.clave);
+        const vb = valorCol(b, orden.clave);
+        if (typeof va === "number" && typeof vb === "number") return (va - vb) * signo;
+        const sa = String(va ?? "");
+        const sb = String(vb ?? "");
+        return (sa < sb ? -1 : sa > sb ? 1 : 0) * signo;
+      });
+    }
+    function filaHTML(f) {
+      const ev = evOf(f.prob, f.cuota);
+      const info = MODELO_INFO[f.model] || { nombre: f.model, color: "#90A2C6" };
+      const clasePnl = f.pnl > 0 ? "pos" : f.pnl < 0 ? "neg" : "";
+      return (
+        "<tr>" +
+        '<td class="c-fecha">' + esc(f.fecha) + "</td>" +
+        '<td class="c-liga">' + esc(NOMBRE_LIGAS[f.liga] || f.liga) + "</td>" +
+        '<td class="c-partido"><span class="local">' + esc(f.local) +
+        '</span><span class="vs">vs</span><span class="visitante">' + esc(f.visitante) + "</span></td>" +
+        '<td><span class="chip-modelo" style="color:' + info.color +
+        ";border-color:" + info.color + '">' + esc(info.nombre) + "</span></td>" +
+        '<td class="c-num">' + (Number.isFinite(f.prob) ? (f.prob * 100).toFixed(0) + " %" : "—") + "</td>" +
+        '<td class="c-num">' + fmtNum(f.cuota) + "</td>" +
+        '<td class="c-num">' + fmtNum(ev) + "</td>" +
+        '<td><span class="res ' + (f.resultado === "G" ? "res-g" : "res-p") + '">' +
+        esc(f.resultado) + '</span><span class="goles">' + esc(f.goles) + "</span></td>" +
+        '<td class="c-num ' + clasePnl + '">' + fmtSoles(f.pnl) + "</td>" +
+        "</tr>"
+      );
+    }
+    function pintarTabla() {
+      const filas = ordenarFilas(visibles);
+      $("conteo").textContent = filas.length === 1 ? "1 pick" : filas.length + " picks";
+      $("cuerpo-tabla").innerHTML =
+        filas.length === 0
+          ? '<tr class="fila-vacia"><td colspan="9">Ningún pick con estos filtros.</td></tr>'
+          : filas.map(filaHTML).join("");
+    }
+    function pintarOrden() {
+      document.querySelectorAll("#tabla-picks th[data-clave]").forEach((th) => {
+        th.classList.toggle("ord-asc", th.dataset.clave === orden.clave && orden.dir === "asc");
+        th.classList.toggle("ord-desc", th.dataset.clave === orden.clave && orden.dir === "desc");
+      });
+    }
+
+    // ---------- modelo activo ----------
+    function activarModelo(id) {
+      modeloActivo = id;
+      document
+        .querySelectorAll(".btn-modelo")
+        .forEach((b) => b.classList.toggle("activo", b.dataset.modelo === id));
+      refrescar();
+    }
+
+    // ---------- arranque ----------
+    function iniciar() {
+      const total = filasModelo("oddchek").length + filasModelo("over25").length;
+      $("badge-total").textContent = String(total);
+      $("badge-total-texto").textContent = total === 1 ? "pick registrado" : "picks registrados";
+      $("actualizado").textContent =
+        "Actualizado: " + ((DATA.meta && DATA.meta.generated_at) || "—");
+      $("conv-stake").textContent = String((DATA.meta && DATA.meta.stake) || 10);
+      $("conv-bank").textContent = BANK0.toLocaleString("es-PE");
+
+      document
+        .querySelectorAll(".btn-modelo")
+        .forEach((btn) => btn.addEventListener("click", () => activarModelo(btn.dataset.modelo)));
+      document.querySelectorAll('input[name="liga"]').forEach((chip) => {
+        chip.addEventListener("change", refrescar);
+      });
+      [
+        "filtro-equipo", "filtro-cuota-min", "filtro-cuota-max", "filtro-prob-min",
+        "filtro-prob-max", "filtro-ev-min", "filtro-ev-max", "filtro-desde", "filtro-hasta",
+      ].forEach((id) => $(id).addEventListener("input", refrescar));
+      ["filtro-lado", "filtro-resultado"].forEach((id) =>
+        $(id).addEventListener("change", refrescar)
+      );
+      $("btn-reset").addEventListener("click", limpiarFiltros);
+      document.querySelectorAll("#tabla-picks th[data-clave]").forEach((th) => {
+        th.addEventListener("click", () => {
+          const clave = th.dataset.clave;
+          if (orden.clave === clave) {
+            orden.dir = orden.dir === "asc" ? "desc" : "asc";
+          } else {
+            orden = { clave, dir: clave === "fecha" || clave === "pnl" ? "desc" : "asc" };
+          }
+          pintarOrden();
+          pintarTabla();
+        });
+      });
+
+      activarModelo("ambos");
+      pintarOrden();
+    }
+    iniciar();
+  </script>
+</body>
+</html>
